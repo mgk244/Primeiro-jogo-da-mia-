@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>NUBANK</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono&display=swap');
+        body { background: #050a0e; color: #fff; font-family: 'Roboto Mono', monospace; margin: 0; min-height: 100vh; overflow-x: hidden; }
+        
+        #login { background: #000; position: fixed; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2000; }
+        
+        /* Header e Botão Menu */
+        header { background: rgba(17, 27, 33, 0.95); padding: 20px; border-bottom: 3px solid #ff0055; text-align: center; position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); display: flex; justify-content: space-between; align-items: center; }
+        header h2 { font-family: 'Orbitron', sans-serif; color: #ff0055; letter-spacing: 3px; margin: 0; flex-grow: 1; }
+        
+        .menu-btn { font-size: 30px; color: #ff0055; cursor: pointer; background: none; border: none; padding: 0 15px; }
+
+        /* Aba Lateral (Sidebar) */
+        #sidebar { 
+            position: fixed; left: -300px; top: 0; width: 280px; height: 100%; 
+            background: rgba(0, 0, 0, 0.95); border-right: 2px solid #ff0055; 
+            z-index: 1000; transition: 0.4s; padding: 20px; box-sizing: border-box;
+            box-shadow: 10px 0 30px rgba(255, 0, 85, 0.2);
+        }
+        #sidebar.active { left: 0; }
+        #sidebar h3 { font-family: 'Orbitron'; color: #00ffcc; font-size: 14px; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+
+        .nav-link { display: block; color: #fff; text-decoration: none; padding: 12px; border-bottom: 1px solid #222; font-size: 12px; transition: 0.3s; }
+        .nav-link:hover { background: rgba(255, 0, 85, 0.1); color: #ff0055; }
+
+        /* Área de Adicionar Link */
+        .add-link-box { margin-top: 30px; background: #111; padding: 15px; border-radius: 8px; border: 1px dashed #444; }
+        .add-link-box input { 
+            width: 90%; background: #000; border: 1px solid #333; color: #fff; 
+            padding: 8px; margin-bottom: 10px; font-size: 10px; font-family: 'Roboto Mono';
+        }
+        .btn-add { background: #ff0055; color: #fff; border: none; width: 100%; padding: 10px; cursor: pointer; font-family: 'Orbitron'; font-size: 10px; }
+
+        /* Logs e Cards */
+        #lista { padding: 20px; max-width: 800px; margin: auto; }
+        .log-card { background: rgba(32, 44, 51, 0.6); margin-bottom: 20px; padding: 20px; border-radius: 12px; border-left: 5px solid #ff0055; }
+        .nick-box { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; }
+        .nick { color: #ff0055; font-size: 18px; font-weight: bold; font-family: 'Orbitron'; }
+        .sub-nick-input { background: #111; border: 1px solid #444; color: #ffd700; padding: 5px 10px; border-radius: 5px; font-size: 12px; width: 140px; }
+        .info-line { margin: 8px 0; font-size: 14px; }
+        .info-val { color: #00ffcc; font-weight: bold; cursor: pointer; }
+        .ip-hidden { filter: blur(5px); }
+        .footer-logs { margin-top: 15px; padding-top: 10px; border-top: 1px dashed #444; font-size: 11px; color: #ffd700; }
+        .btn-del { background: #220000; color: #ff4444; border: 1px solid #ff4444; padding: 8px; width: 100%; margin-top: 10px; cursor: pointer; }
+        
+        input[type="password"] { background: #111; border: 2px solid #ff0055; color: #fff; padding: 12px; text-align: center; font-family: 'Orbitron'; }
+    </style>
+</head>
+<body>
+
+<div id="login">
+    <h2 style="color: #ff0055; font-family: 'Orbitron';">MIA💓 SECURITY</h2>
+    <input type="password" id="key" placeholder="CHAVE">
+    <button onclick="entrar()" style="margin-top:15px; padding:12px 40px; background:#ff0055; color:#fff; border:none; border-radius:8px; cursor:pointer; font-family:'Orbitron';">ACESSAR</button>
+</div>
+
+<!-- ABA LATERAL (SIDEBAR) -->
+<div id="sidebar">
+    <div style="text-align:right;"><button class="menu-btn" onclick="toggleMenu()">×</button></div>
+    <h3>TOOLS & LINKS</h3>
+    
+    <div id="links-container">
+        <a href="https://ip-api.com" target="_blank" class="nav-link">🌐 IP-API.COM</a>
+        <a href="https://ipleak.net" target="_blank" class="nav-link">🔍 IPLEAK.NET</a>
+        <!-- Novos links aparecerão aqui -->
+    </div>
+
+    <div class="add-link-box">
+        <p style="font-size: 10px; color: #ff0055; margin-top:0;">+ NOVO LINK</p>
+        <input type="text" id="link-nome" placeholder="NOME DO LINK">
+        <input type="text" id="link-url" placeholder="URL (https://...)">
+        <button class="btn-add" onclick="adicionarNovoLink()">SALVAR LINK</button>
+    </div>
+</div>
+
+<header>
+    <button class="menu-btn" onclick="toggleMenu()">≡</button>
+    <h2>DATABASE LOGS</h2>
+    <div style="width: 50px;"></div> <!-- Espaçador para centralizar título -->
+</header>
+
+<div id="lista"></div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-app.js";
+    import { getDatabase, ref, onValue, remove, update, push } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-database.js";
+
+    const firebaseConfig = { databaseURL: "https://operacaoantpnr-default-rtdb.firebaseio.com" };
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    window.toggleMenu = () => document.getElementById('sidebar').classList.toggle('active');
+
+    window.entrar = () => {
+        if(document.getElementById('key').value === "ip67") {
+            document.getElementById('login').style.display = 'none';
+            carregar();
+            carregarLinks();
+        } else { alert("CHAVE INCORRETA!"); }
+    }
+
+    // ADICIONAR LINK PERSONALIZADO NO FIREBASE
+    window.adicionarNovoLink = () => {
+        const nome = document.getElementById('link-nome').value;
+        const url = document.getElementById('link-url').value;
+        if(!nome || !url) return alert("Preencha tudo!");
+        
+        push(ref(db, 'links_menu/'), { nome, url });
+        document.getElementById('link-nome').value = "";
+        document.getElementById('link-url').value = "";
+    }
+
+    function carregarLinks() {
+        onValue(ref(db, 'links_menu/'), (snap) => {
+            const container = document.getElementById('links-container');
+            container.innerHTML = `
+                <a href="https://ip-api.com" target="_blank" class="nav-link">🌐 IP-API.COM</a>
+                <a href="https://ipleak.net" target="_blank" class="nav-link">🔍 IPLEAK.NET</a>
+            `;
+            snap.forEach(child => {
+                const data = child.val();
+                container.innerHTML += `<a href="${data.url}" target="_blank" class="nav-link">🔗 ${data.nome.toUpperCase()}</a>`;
+            });
+        });
+    }
+
+    window.toggleIP = (el) => el.classList.toggle('ip-hidden');
+    window.salvarIdentificacao = (id, valor) => update(ref(db, 'logs_arena/' + id), { identificacao: valor });
+
+    function carregar() {
+        onValue(ref(db, 'logs_arena/'), (snap) => {
+            const lista = document.getElementById('lista');
+            lista.innerHTML = "";
+            snap.forEach((child) => {
+                const v = child.val();
+                const id = child.key;
+                const card = document.createElement('div');
+                card.className = 'log-card';
+                card.innerHTML = `
+                    <div class="nick-box"><span class="nick">👤 ${v.player}</span>
+                    <input type="text" class="sub-nick-input" value="${v.identificacao || ''}" onchange="salvarIdentificacao('${id}', this.value)"></div>
+                    <div class="info-line"><span>🌐</span> IP: <div class="info-val ip-hidden" onclick="toggleIP(this)">&nbsp;${v.ip}</div></div>
+                    <div class="info-line"><span>📍</span> LOCAL: <div class="info-val">&nbsp;${v.local}</div></div>
+                    <div class="info-line"><span>🕒</span> ACESSO: <div class="info-val">&nbsp;${v.ultima_vez}</div></div>
+                    <div class="footer-logs">🔥 LOGS: ${v.acessos} SESSÕES</div>
+                    <button class="btn-del" onclick="apagar('${id}')">APAGAR</button>
+                `;
+                lista.prepend(card);
+            });
+        });
+    }
+
+    window.apagar = (id) => { if(confirm("Apagar?")) remove(ref(db, 'logs_arena/' + id)); }
+</script>
+</body>
+</html>

